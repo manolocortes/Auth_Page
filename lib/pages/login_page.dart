@@ -14,18 +14,18 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  //text editing controllers
   final emailController = TextEditingController();
-
   final passwordController = TextEditingController();
 
-  //Sign user in
   void signUserIn() async {
-    //loading
     showDialog(
       context: context,
       builder: (context) {
-        return const Center(child: CircularProgressIndicator());
+        return const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+          ),
+        );
       },
     );
 
@@ -45,8 +45,24 @@ class _LoginPageState extends State<LoginPage> {
     showDialog(
       context: context,
       builder: (context) {
-        return Center(
-          child: AlertDialog(title: Center(child: Text(message))),
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.red[600]),
+              const SizedBox(width: 8),
+              const Text('Error'),
+            ],
+          ),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
         );
       },
     );
@@ -55,110 +71,151 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[300],
+      backgroundColor: const Color(0xFFF8F9FA),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(height: 50),
-                //logo
-                Icon(Icons.lock, size: 100),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 40),
 
-                const SizedBox(height: 50),
-
-                Text(
-                  'Welcome Back Nigger',
-                  style: TextStyle(color: Colors.grey[700], fontSize: 16),
-                ),
-                const SizedBox(height: 40),
-                //username Text Field
-                MyTextfield(
-                  controller: emailController,
-                  hintText: 'Email',
-                  obscureText: false,
-                ),
-
-                const SizedBox(height: 10),
-
-                //password field
-                MyTextfield(
-                  controller: passwordController,
-                  hintText: 'Password', 
-                  obscureText: true,
-                ),
-
-                const SizedBox(height: 10),
-
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 25.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text(
-                        'Forgot Password?',
-                        style: TextStyle(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                  // Logo and Brand
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.green[50],
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Icon(
+                      Icons.shopping_cart,
+                      size: 60,
+                      color: Colors.green[600],
+                    ),
                   ),
-                ),
 
-                const SizedBox(height: 40),
+                  const SizedBox(height: 24),
 
-                MyButton(text: "Sign in", onTap: signUserIn),
+                  Text(
+                    'FreshMart',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green[700],
+                    ),
+                  ),
 
-                const SizedBox(height: 40),
+                  const SizedBox(height: 8),
 
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 25.0),
-                  child: Row(
+                  Text(
+                    'Fresh groceries delivered to your door',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+
+                  const SizedBox(height: 48),
+
+                  Text(
+                    'Welcome Back!',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  Text(
+                    'Sign in to continue shopping',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  MyTextfield(
+                    controller: emailController,
+                    hintText: 'Email Address',
+                    obscureText: false,
+                    prefixIcon: Icons.email_outlined,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  MyTextfield(
+                    controller: passwordController,
+                    hintText: 'Password',
+                    obscureText: true,
+                    prefixIcon: Icons.lock_outline,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  MyButton(
+                    text: "Sign In",
+                    onTap: signUserIn,
+                    backgroundColor: Colors.green[600]!,
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  Row(
                     children: [
                       Expanded(
-                        child: Divider(thickness: 0.5, color: Colors.grey[400]),
+                        child: Divider(thickness: 1, color: Colors.grey[300]),
                       ),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         child: Text(
                           'Or continue with',
-                          style: TextStyle(color: Colors.grey[700]),
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 14,
+                          ),
                         ),
                       ),
                       Expanded(
-                        child: Divider(thickness: 0.5, color: Colors.grey[400]),
+                        child: Divider(thickness: 1, color: Colors.grey[300]),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 25),
-                SquareTile(imagePath: 'lib/images/google.png', onTap: () => AuthService().signInWithGoogle(),),
 
-                const SizedBox(height: 50),
+                  const SizedBox(height: 24),
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Not a memeber?',
-                      style: TextStyle(color: Colors.grey[700]),
-                    ),
-                    const SizedBox(width: 4),
-                    GestureDetector(
-                      onTap: widget.onTap,
-                      child: const Text(
-                        'Register now',
-                        style: TextStyle(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.bold,
+                  SquareTile(
+                    imagePath: 'lib/images/google.png',
+                    onTap: () => AuthService().signInWithGoogle(),
+                    label: 'Continue with Google',
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Don\'t have an account? ',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                      ),
+                      GestureDetector(
+                        onTap: widget.onTap,
+                        child: Text(
+                          'Sign Up',
+                          style: TextStyle(
+                            color: Colors.green[600],
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+
+                  const SizedBox(height: 40),
+                ],
+              ),
             ),
           ),
         ),
