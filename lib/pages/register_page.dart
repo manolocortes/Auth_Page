@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:my_app/components/my_button.dart';
 import 'package:my_app/components/my_textfield.dart';
 import 'package:my_app/components/square_tile.dart';
+import 'package:my_app/services/auth_service.dart';
 
 class RegisterPage extends StatefulWidget {
   final Function()? onTap;
@@ -128,7 +129,10 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
                 const SizedBox(height: 25),
-                SquareTile(imagePath: 'lib/images/google.png'),
+                SquareTile(
+                  imagePath: 'lib/images/google.png',
+                  onTap: () => AuthService().signInWithGoogle(),
+                ),
 
                 const SizedBox(height: 50),
 

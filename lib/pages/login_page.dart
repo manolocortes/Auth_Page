@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:my_app/components/my_button.dart';
 import 'package:my_app/components/my_textfield.dart';
 import 'package:my_app/components/square_tile.dart';
+import 'package:my_app/services/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
   final Function()? onTap;
@@ -84,7 +85,7 @@ class _LoginPageState extends State<LoginPage> {
                 //password field
                 MyTextfield(
                   controller: passwordController,
-                  hintText: 'Password',
+                  hintText: 'Password', 
                   obscureText: true,
                 ),
 
@@ -133,7 +134,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 25),
-                SquareTile(imagePath: 'lib/images/google.png'),
+                SquareTile(imagePath: 'lib/images/google.png', onTap: () => AuthService().signInWithGoogle(),),
 
                 const SizedBox(height: 50),
 
