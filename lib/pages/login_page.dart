@@ -71,7 +71,7 @@ class _LoginPageState extends State<LoginPage> {
                   'Welcome Back Nigger',
                   style: TextStyle(color: Colors.grey[700], fontSize: 16),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 40),
                 //username Text Field
                 MyTextfield(
                   controller: emailController,
@@ -79,7 +79,7 @@ class _LoginPageState extends State<LoginPage> {
                   obscureText: false,
                 ),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: 10),
 
                 //password field
                 MyTextfield(
@@ -108,7 +108,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 const SizedBox(height: 40),
 
-                MyButton(onTap: signUserIn),
+                MyButton(text: "Sign in", onTap: signUserIn),
 
                 const SizedBox(height: 40),
 
@@ -141,22 +141,17 @@ class _LoginPageState extends State<LoginPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Not a member?',
+                      'Not a memeber?',
                       style: TextStyle(color: Colors.grey[700]),
                     ),
                     const SizedBox(width: 4),
                     GestureDetector(
-                      onTap: () {
-                        // Navigate to the register page
-                      },
-                      child: GestureDetector(
-                        onTap: onTap,
-                        child: Text(
-                          'Register now',
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      onTap: widget.onTap,
+                      child: const Text(
+                        'Register now',
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),

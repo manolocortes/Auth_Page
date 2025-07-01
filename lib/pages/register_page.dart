@@ -9,16 +9,17 @@ class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key, required this.onTap});
 
   @override
-  State<RegisterPage> createState() => RegisterPageState();
+  State<RegisterPage> createState() => _RegisterPageState();
 }
 
-class RegisterPageState extends State<RegisterPage> {
+class _RegisterPageState extends State<RegisterPage> {
   //text editing controllers
   final emailController = TextEditingController();
 
   final passwordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
 
-  //Sign user in
+  //Sign user up
   void signUserUp() async {
     //loading
     showDialog(
@@ -29,10 +30,14 @@ class RegisterPageState extends State<RegisterPage> {
     );
 
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: emailController.text,
-        password: passwordController.text,
-      );
+      if (passwordController.text == confirmPasswordController.text) {
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: emailController.text,
+          password: passwordController.text,
+        );
+      } else {
+        showErrorMessage('Passwords don\'t match');
+      }
       Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
       Navigator.pop(context);
@@ -68,7 +73,7 @@ class RegisterPageState extends State<RegisterPage> {
                 const SizedBox(height: 50),
 
                 Text(
-                  'Welcome Back Nigger',
+                  'Create an Account',
                   style: TextStyle(color: Colors.grey[700], fontSize: 16),
                 ),
                 const SizedBox(height: 20),
@@ -79,7 +84,7 @@ class RegisterPageState extends State<RegisterPage> {
                   obscureText: false,
                 ),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: 10),
 
                 //password field
                 MyTextfield(
@@ -90,25 +95,15 @@ class RegisterPageState extends State<RegisterPage> {
 
                 const SizedBox(height: 10),
 
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 25.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text(
-                        'Forgot Password?',
-                        style: TextStyle(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
+                //Confirm password field
+                MyTextfield(
+                  controller: confirmPasswordController,
+                  hintText: 'Confirm Password',
+                  obscureText: true,
                 ),
-
                 const SizedBox(height: 40),
 
-                MyButton(onTap: signUserIn),
+                MyButton(text: 'Sign Up', onTap: signUserUp),
 
                 const SizedBox(height: 40),
 
@@ -141,22 +136,17 @@ class RegisterPageState extends State<RegisterPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Not a member?',
+                      'Already have an account?',
                       style: TextStyle(color: Colors.grey[700]),
                     ),
                     const SizedBox(width: 4),
                     GestureDetector(
-                      onTap: () {
-                        // Navigate to the register page
-                      },
-                      child: GestureDetector(
-                        onTap: onTap,
-                        child: Text(
-                          'Register now',
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      onTap: widget.onTap,
+                      child: const Text(
+                        'Login now',
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
