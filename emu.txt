@@ -1,0 +1,1 @@
+env QT_QPA_PLATFORM=xcb emulator -avd Pixel7Pro_Emu
