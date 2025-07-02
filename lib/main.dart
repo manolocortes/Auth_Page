@@ -12,7 +12,7 @@ void main() async {
 
   // DEVELOPMENT ONLY - Remove this in production
   // Uncomment the line below to import sample data on app start
-  await FirebaseDataImporter.importSampleData();
+  //await FirebaseDataImporter.importSampleData();
 
   runApp(const MyApp());
 }
