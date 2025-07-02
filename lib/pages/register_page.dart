@@ -17,8 +17,30 @@ class _RegisterPageState extends State<RegisterPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
+  bool _isGoogleSignInLoading = false;
 
   void signUserUp() async {
+    // Validate inputs first
+    if (emailController.text.trim().isEmpty) {
+      showErrorMessage('Please enter your email address');
+      return;
+    }
+
+    if (passwordController.text.isEmpty) {
+      showErrorMessage('Please enter a password');
+      return;
+    }
+
+    if (passwordController.text != confirmPasswordController.text) {
+      showErrorMessage('Passwords don\'t match');
+      return;
+    }
+
+    if (passwordController.text.length < 6) {
+      showErrorMessage('Password must be at least 6 characters long');
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (context) {
@@ -31,22 +53,181 @@ class _RegisterPageState extends State<RegisterPage> {
     );
 
     try {
-      if (passwordController.text == confirmPasswordController.text) {
-        await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: emailController.text,
-          password: passwordController.text,
+      await AuthService.signUpWithEmailAndPassword(
+        emailController.text.trim(),
+        passwordController.text,
+      );
+
+      // Check if widget is still mounted before using context
+      if (mounted) {
+        Navigator.pop(context);
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account created successfully!'),
+            backgroundColor: Colors.green,
+          ),
         );
-      } else {
-        showErrorMessage('Passwords don\'t match');
       }
-      Navigator.pop(context);
+    } on EmailAlreadyExistsException catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        showEmailConflictDialog(e);
+      }
     } on FirebaseAuthException catch (e) {
-      Navigator.pop(context);
-      showErrorMessage(e.code);
+      if (mounted) {
+        Navigator.pop(context);
+        showErrorMessage(_getFirebaseErrorMessage(e.code));
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        showErrorMessage('Registration failed: ${e.toString()}');
+      }
     }
   }
 
+  void signInWithGoogle() async {
+    setState(() {
+      _isGoogleSignInLoading = true;
+    });
+
+    try {
+      final isAvailable = await AuthService.isGooglePlayServicesAvailable();
+      if (!isAvailable) {
+        throw Exception('Google Play Services is not available on this device');
+      }
+
+      final userCredential = await AuthService.signInWithGoogle();
+
+      if (userCredential != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Welcome ${userCredential.user?.displayName ?? 'User'}!',
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } on EmailAlreadyExistsException catch (e) {
+      if (mounted) {
+        showEmailConflictDialog(e);
+      }
+    } catch (e) {
+      if (mounted) {
+        showErrorMessage(e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGoogleSignInLoading = false;
+        });
+      }
+    }
+  }
+
+  String _getFirebaseErrorMessage(String errorCode) {
+    switch (errorCode) {
+      case 'weak-password':
+        return 'The password is too weak. Please choose a stronger password.';
+      case 'invalid-email':
+        return 'Please enter a valid email address.';
+      case 'email-already-in-use':
+        return 'This email is already registered. Please sign in instead.';
+      case 'operation-not-allowed':
+        return 'Email/password accounts are not enabled.';
+      default:
+        return 'Registration failed. Please try again.';
+    }
+  }
+
+  void showEmailConflictDialog(EmailAlreadyExistsException exception) {
+    if (!mounted) return; // Add this check
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange[600]),
+              const SizedBox(width: 8),
+              const Text('Email Already Registered'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(exception.message),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      exception.signInMethod == SignInMethod.google
+                          ? Icons.login
+                          : Icons.email,
+                      color: Colors.blue[600],
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        exception.signInMethod == SignInMethod.google
+                            ? 'Use "Continue with Google" to sign in'
+                            : 'Use "Sign In" with your email and password',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue[700],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                // Navigate to sign in page
+                widget.onTap?.call();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green[600],
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Go to Sign In'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void showErrorMessage(String message) {
+    if (!mounted) return; // Add this check
+
     showDialog(
       context: context,
       builder: (context) {
@@ -151,7 +332,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                   MyTextfield(
                     controller: passwordController,
-                    hintText: 'Password',
+                    hintText: 'Password (min 6 characters)',
                     obscureText: true,
                     prefixIcon: Icons.lock_outline,
                   ),
@@ -200,8 +381,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
                   SquareTile(
                     imagePath: 'lib/images/google.png',
-                    onTap: () => AuthService().signInWithGoogle(),
-                    label: 'Continue with Google',
+                    onTap: _isGoogleSignInLoading ? null : signInWithGoogle,
+                    label: _isGoogleSignInLoading
+                        ? 'Signing in...'
+                        : 'Continue with Google',
+                    isLoading: _isGoogleSignInLoading,
                   ),
 
                   const SizedBox(height: 32),

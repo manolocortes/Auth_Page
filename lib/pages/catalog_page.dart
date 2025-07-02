@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/grocery_item.dart';
 import '../services/grocery_service.dart';
 import '../services/cart_service.dart';
+import '../services/auth_service.dart';
 import '../components/grocery_item_card.dart';
 import '../components/category_filter.dart';
 import 'qr_scanner_page.dart';
@@ -51,8 +52,8 @@ class _CatalogPageState extends State<CatalogPage> {
         // Clear cart when signing out
         context.read<CartService>().clearCart();
 
-        // Sign out from Firebase
-        await FirebaseAuth.instance.signOut();
+        // Sign out from both Firebase and Google using AuthService
+        await AuthService.signOut();
 
         // Show success message
         if (mounted) {

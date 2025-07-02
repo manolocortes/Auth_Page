@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:my_app/components/my_button.dart';
 import 'package:my_app/components/my_textfield.dart';
 import 'package:my_app/components/square_tile.dart';
@@ -16,8 +17,19 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  bool _isGoogleSignInLoading = false;
 
   void signUserIn() async {
+    if (emailController.text.trim().isEmpty) {
+      showErrorMessage('Please enter your email address');
+      return;
+    }
+
+    if (passwordController.text.isEmpty) {
+      showErrorMessage('Please enter your password');
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (context) {
@@ -31,17 +43,153 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: emailController.text,
+        email: emailController.text.trim(),
         password: passwordController.text,
       );
-      Navigator.pop(context);
+
+      // Check if widget is still mounted before using context
+      if (mounted) {
+        Navigator.pop(context);
+      }
     } on FirebaseAuthException catch (e) {
-      Navigator.pop(context);
-      showErrorMessage(e.code);
+      // Check if widget is still mounted before using context
+      if (mounted) {
+        Navigator.pop(context);
+        showErrorMessage(_getFirebaseErrorMessage(e.code));
+      }
+    } catch (e) {
+      // Check if widget is still mounted before using context
+      if (mounted) {
+        Navigator.pop(context);
+        showErrorMessage('Login failed: ${e.toString()}');
+      }
     }
   }
 
+  void signInWithGoogle() async {
+    setState(() {
+      _isGoogleSignInLoading = true;
+    });
+
+    try {
+      final isAvailable = await AuthService.isGooglePlayServicesAvailable();
+      if (!isAvailable) {
+        throw Exception('Google Play Services is not available on this device');
+      }
+
+      final userCredential = await AuthService.signInWithGoogle();
+
+      if (userCredential != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Welcome back ${userCredential.user?.displayName ?? 'User'}!',
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } on EmailAlreadyExistsException catch (e) {
+      if (mounted) {
+        showEmailConflictDialog(e);
+      }
+    } catch (e) {
+      if (mounted) {
+        showErrorMessage(e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGoogleSignInLoading = false;
+        });
+      }
+    }
+  }
+
+  String _getFirebaseErrorMessage(String errorCode) {
+    switch (errorCode) {
+      case 'user-not-found':
+        return 'No account found with this email address.';
+      case 'wrong-password':
+        return 'Incorrect password. Please try again.';
+      case 'invalid-email':
+        return 'Please enter a valid email address.';
+      case 'user-disabled':
+        return 'This account has been disabled.';
+      case 'too-many-requests':
+        return 'Too many failed attempts. Please try again later.';
+      case 'invalid-credential':
+        return 'Invalid email or password. Please check your credentials.';
+      default:
+        return 'Login failed. Please try again.';
+    }
+  }
+
+  void showEmailConflictDialog(EmailAlreadyExistsException exception) {
+    if (!mounted) return; // Add this check
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange[600]),
+              const SizedBox(width: 8),
+              const Text('Account Conflict'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(exception.message),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.email, color: Colors.blue[600], size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Please sign in with your email and password above',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue[700],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void showErrorMessage(String message) {
+    if (!mounted) return; // Add this check
+
     showDialog(
       context: context,
       builder: (context) {
@@ -56,7 +204,43 @@ class _LoginPageState extends State<LoginPage> {
               const Text('Error'),
             ],
           ),
-          content: Text(message),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(message),
+              if (message.contains('configuration')) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue[200]!),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Troubleshooting:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue[700],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '• Check your internet connection\n'
+                        '• Verify Google Sign-In is configured\n'
+                        '• Try signing in with email instead',
+                        style: TextStyle(fontSize: 12, color: Colors.blue[600]),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -153,6 +337,22 @@ class _LoginPageState extends State<LoginPage> {
 
                   const SizedBox(height: 16),
 
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {},
+                      child: Text(
+                        'Forgot Password?',
+                        style: TextStyle(
+                          color: Colors.green[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
                   MyButton(
                     text: "Sign In",
                     onTap: signUserIn,
@@ -186,8 +386,11 @@ class _LoginPageState extends State<LoginPage> {
 
                   SquareTile(
                     imagePath: 'lib/images/google.png',
-                    onTap: () => AuthService().signInWithGoogle(),
-                    label: 'Continue with Google',
+                    onTap: _isGoogleSignInLoading ? null : signInWithGoogle,
+                    label: _isGoogleSignInLoading
+                        ? 'Signing in...'
+                        : 'Continue with Google',
+                    isLoading: _isGoogleSignInLoading,
                   ),
 
                   const SizedBox(height: 32),

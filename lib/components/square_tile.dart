@@ -4,12 +4,14 @@ class SquareTile extends StatelessWidget {
   final String imagePath;
   final Function()? onTap;
   final String? label;
+  final bool isLoading;
 
   const SquareTile({
     super.key,
     required this.imagePath,
     required this.onTap,
     this.label,
+    this.isLoading = false,
   });
 
   @override
@@ -41,7 +43,18 @@ class SquareTile extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.asset(imagePath, height: 24),
+                if (isLoading) ...[
+                  const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                    ),
+                  ),
+                ] else ...[
+                  Image.asset(imagePath, height: 24),
+                ],
                 if (label != null) ...[
                   const SizedBox(width: 12),
                   Text(
