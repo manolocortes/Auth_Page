@@ -33,7 +33,7 @@ class CategoryFilter extends StatelessWidget {
         itemBuilder: (context, index) {
           final category = categories[index];
           final isSelected = category == selectedCategory;
-          
+
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(

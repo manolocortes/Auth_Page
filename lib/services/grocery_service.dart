@@ -1,32 +1,36 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/grocery_item.dart';
+import '../models/grocery_item_model.dart';
 
 class GroceryService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collection = 'grocery_items';
 
-  Stream<List<GroceryItem>> getGroceryItems() {
+  Stream<List<GroceryItemModel>> getGroceryItems() {
     return _firestore
         .collection(_collection)
         .where('inStock', isEqualTo: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => GroceryItem.fromFirestore(doc.data(), doc.id))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => GroceryItemModel.fromFirestore(doc.data(), doc.id))
+              .toList(),
+        );
   }
 
-  Stream<List<GroceryItem>> getGroceryItemsByCategory(String category) {
+  Stream<List<GroceryItemModel>> getGroceryItemsByCategory(String category) {
     return _firestore
         .collection(_collection)
         .where('category', isEqualTo: category)
         .where('inStock', isEqualTo: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => GroceryItem.fromFirestore(doc.data(), doc.id))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => GroceryItemModel.fromFirestore(doc.data(), doc.id))
+              .toList(),
+        );
   }
 
-  Future<GroceryItem?> getItemByQRCode(String qrCode) async {
+  Future<GroceryItemModel?> getItemByQRCode(String qrCode) async {
     try {
       final querySnapshot = await _firestore
           .collection(_collection)
@@ -37,7 +41,7 @@ class GroceryService {
 
       if (querySnapshot.docs.isNotEmpty) {
         final doc = querySnapshot.docs.first;
-        return GroceryItem.fromFirestore(doc.data(), doc.id);
+        return GroceryItemModel.fromFirestore(doc.data(), doc.id);
       }
       return null;
     } catch (e) {

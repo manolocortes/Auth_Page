@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/grocery_item.dart';
-import '../services/cart_service.dart';
+import '../../models/grocery_item_model.dart';
+import '../../controllers/cart_controller.dart';
 import 'quantity_selector.dart';
 
 class GroceryItemCard extends StatelessWidget {
-  final GroceryItem item;
+  final GroceryItemModel item;
 
   const GroceryItemCard({super.key, required this.item});
 
@@ -83,7 +83,7 @@ class GroceryItemCard extends StatelessWidget {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    context.read<CartService>().addItem(item, quantity);
+                    context.read<CartController>().addItem(item, quantity);
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -120,7 +120,7 @@ class GroceryItemCard extends StatelessWidget {
           children: [
             // Image Section - Fixed height
             Container(
-              height: 120, // Fixed height instead of flex
+              height: 120,
               width: double.infinity,
               decoration: const BoxDecoration(
                 borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
@@ -149,35 +149,32 @@ class GroceryItemCard extends StatelessWidget {
             // Content Section - Flexible height
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(8), // Reduced padding
+                padding: const EdgeInsets.all(8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min, // Important: minimize height
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     // Item Name
                     Text(
                       item.name,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 13, // Slightly smaller font
+                        fontSize: 13,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
 
-                    const SizedBox(height: 2), // Reduced spacing
+                    const SizedBox(height: 2),
                     // Description
                     Text(
                       item.description,
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 11, // Smaller font
-                      ),
+                      style: TextStyle(color: Colors.grey[600], fontSize: 11),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
 
-                    const Spacer(), // Push price to bottom
+                    const Spacer(),
                     // Price Section
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,

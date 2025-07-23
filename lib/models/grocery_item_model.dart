@@ -1,4 +1,4 @@
-class GroceryItem {
+class GroceryItemModel {
   final String id;
   final String name;
   final String description;
@@ -7,9 +7,9 @@ class GroceryItem {
   final String category;
   final String qrCode;
   final bool inStock;
-  final String unit; // kg, pieces, liters, etc.
+  final String unit;
 
-  GroceryItem({
+  GroceryItemModel({
     required this.id,
     required this.name,
     required this.description,
@@ -21,8 +21,8 @@ class GroceryItem {
     required this.unit,
   });
 
-  factory GroceryItem.fromFirestore(Map<String, dynamic> data, String id) {
-    return GroceryItem(
+  factory GroceryItemModel.fromFirestore(Map<String, dynamic> data, String id) {
+    return GroceryItemModel(
       id: id,
       name: data['name'] ?? '',
       description: data['description'] ?? '',
@@ -46,5 +46,29 @@ class GroceryItem {
       'inStock': inStock,
       'unit': unit,
     };
+  }
+
+  GroceryItemModel copyWith({
+    String? id,
+    String? name,
+    String? description,
+    double? price,
+    String? imageUrl,
+    String? category,
+    String? qrCode,
+    bool? inStock,
+    String? unit,
+  }) {
+    return GroceryItemModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      price: price ?? this.price,
+      imageUrl: imageUrl ?? this.imageUrl,
+      category: category ?? this.category,
+      qrCode: qrCode ?? this.qrCode,
+      inStock: inStock ?? this.inStock,
+      unit: unit ?? this.unit,
+    );
   }
 }

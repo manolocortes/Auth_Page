@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class MyTextfield extends StatelessWidget {
-  final controller;
+  final TextEditingController controller;
   final String hintText;
   final bool obscureText;
   final IconData? prefixIcon;
@@ -46,10 +46,7 @@ class MyTextfield extends StatelessWidget {
           fillColor: Colors.white,
           filled: true,
           hintText: hintText,
-          hintStyle: TextStyle(
-            color: Colors.grey[500],
-            fontSize: 16,
-          ),
+          hintStyle: TextStyle(color: Colors.grey[500], fontSize: 16),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
             vertical: 16,

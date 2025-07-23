@@ -1,17 +1,17 @@
 import 'package:flutter/foundation.dart';
-import '../models/cart_item.dart';
-import '../models/grocery_item.dart';
+import '../models/cart_item_model.dart';
+import '../models/grocery_item_model.dart';
 
-class CartService extends ChangeNotifier {
-  final List<CartItem> _items = [];
+class CartController extends ChangeNotifier {
+  final List<CartItemModel> _items = [];
 
-  List<CartItem> get items => List.unmodifiable(_items);
-
+  List<CartItemModel> get items => List.unmodifiable(_items);
   int get itemCount => _items.fold(0, (sum, item) => sum + item.quantity);
+  double get totalAmount =>
+      _items.fold(0, (sum, item) => sum + item.totalPrice);
+  bool get isEmpty => _items.isEmpty;
 
-  double get totalAmount => _items.fold(0, (sum, item) => sum + item.totalPrice);
-
-  void addItem(GroceryItem groceryItem, int quantity) {
+  void addItem(GroceryItemModel groceryItem, int quantity) {
     final existingIndex = _items.indexWhere(
       (item) => item.groceryItem.id == groceryItem.id,
     );
@@ -19,7 +19,7 @@ class CartService extends ChangeNotifier {
     if (existingIndex >= 0) {
       _items[existingIndex].quantity += quantity;
     } else {
-      _items.add(CartItem(groceryItem: groceryItem, quantity: quantity));
+      _items.add(CartItemModel(groceryItem: groceryItem, quantity: quantity));
     }
     notifyListeners();
   }
@@ -44,5 +44,17 @@ class CartService extends ChangeNotifier {
   void clearCart() {
     _items.clear();
     notifyListeners();
+  }
+
+  CartItemModel? getItem(String itemId) {
+    try {
+      return _items.firstWhere((item) => item.groceryItem.id == itemId);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  bool hasItem(String itemId) {
+    return _items.any((item) => item.groceryItem.id == itemId);
   }
 }

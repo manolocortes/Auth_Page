@@ -99,6 +99,21 @@ class AuthService {
     }
   }
 
+  // Sign in with email and password
+  static Future<UserCredential> signInWithEmailAndPassword(
+    String email,
+    String password,
+  ) async {
+    try {
+      return await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   // Sign in with Google (with email conflict check)
   static Future<UserCredential?> signInWithGoogle() async {
     try {
@@ -197,6 +212,111 @@ class AuthService {
       return false;
     }
   }
+
+  // Get current user
+  static User? getCurrentUser() {
+    return FirebaseAuth.instance.currentUser;
+  }
+
+  // Check if user is signed in
+  static bool isSignedIn() {
+    return FirebaseAuth.instance.currentUser != null;
+  }
+
+  // Send password reset email
+  static Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Update user profile
+  static Future<void> updateUserProfile({
+    String? displayName,
+    String? photoURL,
+  }) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await user.updateDisplayName(displayName);
+        await user.updatePhotoURL(photoURL);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Delete user account
+  static Future<void> deleteAccount() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await user.delete();
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Re-authenticate user (required for sensitive operations)
+  static Future<void> reauthenticateWithPassword(String password) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null && user.email != null) {
+        final credential = EmailAuthProvider.credential(
+          email: user.email!,
+          password: password,
+        );
+        await user.reauthenticateWithCredential(credential);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Change password
+  static Future<void> changePassword(String newPassword) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await user.updatePassword(newPassword);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Verify email
+  static Future<void> sendEmailVerification() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null && !user.emailVerified) {
+        await user.sendEmailVerification();
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Check if email is verified
+  static bool isEmailVerified() {
+    final user = FirebaseAuth.instance.currentUser;
+    return user?.emailVerified ?? false;
+  }
+
+  // Reload user to get updated information
+  static Future<void> reloadUser() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await user.reload();
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
 
 // Enum for email status
@@ -217,6 +337,17 @@ class EmailAlreadyExistsException implements Exception {
   final SignInMethod signInMethod;
 
   EmailAlreadyExistsException(this.message, this.signInMethod);
+
+  @override
+  String toString() => message;
+}
+
+// Custom exception for authentication errors
+class AuthException implements Exception {
+  final String message;
+  final String code;
+
+  AuthException(this.message, this.code);
 
   @override
   String toString() => message;

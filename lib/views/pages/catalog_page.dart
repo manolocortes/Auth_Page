@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../models/grocery_item.dart';
-import '../services/grocery_service.dart';
-import '../services/cart_service.dart';
-import '../services/auth_service.dart';
+import '../../controllers/auth_controller.dart';
+import '../../controllers/grocery_controller.dart';
+import '../../controllers/cart_controller.dart';
 import '../components/grocery_item_card.dart';
-import '../components/category_filter.dart';
 import 'qr_scanner_page.dart';
 import 'cart_page.dart';
 
@@ -18,12 +15,7 @@ class CatalogPage extends StatefulWidget {
 }
 
 class _CatalogPageState extends State<CatalogPage> {
-  final GroceryService _groceryService = GroceryService();
-  String _selectedCategory = 'All';
-  String _searchQuery = '';
-
   void _signOut() async {
-    // Show confirmation dialog
     final shouldSignOut = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -47,39 +39,24 @@ class _CatalogPageState extends State<CatalogPage> {
       ),
     );
 
-    if (shouldSignOut == true) {
-      try {
-        // Clear cart when signing out
-        context.read<CartService>().clearCart();
+    if (shouldSignOut == true && mounted) {
+      context.read<CartController>().clearCart();
+      await context.read<AuthController>().signOut();
 
-        // Sign out from both Firebase and Google using AuthService
-        await AuthService.signOut();
-
-        // Show success message
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Successfully signed out'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } catch (e) {
-        // Show error message
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error signing out: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Successfully signed out'),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
     }
   }
 
   void _showUserMenu() {
-    final user = FirebaseAuth.instance.currentUser;
+    final authController = context.read<AuthController>();
+    final user = authController.currentUser;
 
     showModalBottomSheet(
       context: context,
@@ -142,7 +119,7 @@ class _CatalogPageState extends State<CatalogPage> {
                 color: Colors.green[600],
               ),
               title: const Text('My Cart'),
-              subtitle: Consumer<CartService>(
+              subtitle: Consumer<CartController>(
                 builder: (context, cart, child) {
                   return Text('${cart.itemCount} items');
                 },
@@ -192,8 +169,6 @@ class _CatalogPageState extends State<CatalogPage> {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
@@ -205,7 +180,7 @@ class _CatalogPageState extends State<CatalogPage> {
         ),
         actions: [
           // Cart button with badge
-          Consumer<CartService>(
+          Consumer<CartController>(
             builder: (context, cart, child) {
               return Stack(
                 children: [
@@ -252,156 +227,103 @@ class _CatalogPageState extends State<CatalogPage> {
           // User menu button
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
-            child: IconButton(
-              onPressed: _showUserMenu,
-              icon: CircleAvatar(
-                backgroundColor: Colors.white.withOpacity(0.2),
-                radius: 16,
-                child: Text(
-                  (user?.email?.substring(0, 1).toUpperCase()) ?? 'U',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+            child: Consumer<AuthController>(
+              builder: (context, authController, child) {
+                final user = authController.currentUser;
+                return IconButton(
+                  onPressed: _showUserMenu,
+                  icon: CircleAvatar(
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    radius: 16,
+                    child: Text(
+                      (user?.email?.substring(0, 1).toUpperCase()) ?? 'U',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Search Bar
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.green[600],
-            child: TextField(
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value.toLowerCase();
-                });
-              },
-              decoration: InputDecoration(
-                hintText: 'Search groceries...',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-          ),
-
-          // Category Filter
-          CategoryFilter(
-            selectedCategory: _selectedCategory,
-            onCategoryChanged: (category) {
-              setState(() {
-                _selectedCategory = category;
-              });
-            },
-          ),
-
-          // Items Grid
-          Expanded(
-            child: StreamBuilder<List<GroceryItem>>(
-              stream: _selectedCategory == 'All'
-                  ? _groceryService.getGroceryItems()
-                  : _groceryService.getGroceryItemsByCategory(
-                      _selectedCategory,
-                    ),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
-                    ),
-                  );
-                }
-
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 64,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Error loading items',
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                        const SizedBox(height: 8),
-                        ElevatedButton(
-                          onPressed: () {
-                            setState(() {}); // Trigger rebuild to retry
-                          },
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                final items = snapshot.data ?? [];
-                final filteredItems = items.where((item) {
-                  return item.name.toLowerCase().contains(_searchQuery) ||
-                      item.description.toLowerCase().contains(_searchQuery);
-                }).toList();
-
-                if (filteredItems.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.shopping_basket_outlined,
-                          size: 64,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No items found',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        if (_searchQuery.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            'Try searching for something else',
-                            style: TextStyle(color: Colors.grey[500]),
-                          ),
-                        ],
-                      ],
-                    ),
-                  );
-                }
-
-                return GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.8,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                  ),
-                  itemCount: filteredItems.length,
-                  itemBuilder: (context, index) {
-                    return GroceryItemCard(item: filteredItems[index]);
-                  },
                 );
               },
             ),
           ),
         ],
+      ),
+      body: Consumer<GroceryController>(
+        builder: (context, groceryController, child) {
+          if (groceryController.isLoading) {
+            return const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+              ),
+            );
+          }
+
+          if (groceryController.errorMessage != null) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error loading items',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      groceryController.refresh();
+                    },
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final items = groceryController.items;
+
+          if (items.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.shopping_basket_outlined,
+                    size: 64,
+                    color: Colors.grey[400],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No items available',
+                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Check back later for new products',
+                    style: TextStyle(color: Colors.grey[500]),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 0.8,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+            ),
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              return GroceryItemCard(item: items[index]);
+            },
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
