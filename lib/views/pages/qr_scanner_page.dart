@@ -4,6 +4,7 @@ import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 import '../../controllers/qr_controller.dart';
 import '../../controllers/cart_controller.dart';
 import '../components/quantity_selector.dart';
+import 'cart_page.dart';
 
 class QRScannerPage extends StatefulWidget {
   const QRScannerPage({super.key});
@@ -51,7 +52,11 @@ class _QRScannerPageState extends State<QRScannerPage> {
           // Show item found dialog when item is scanned
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (qrController.scannedItem != null) {
-              _showItemFoundDialog(context, qrController.scannedItem!);
+              _showItemFoundDialog(
+                context,
+                qrController.scannedItem!,
+                qrController,
+              );
             } else if (qrController.errorMessage != null &&
                 !qrController.isProcessing) {
               // Only show error dialog if not currently processing
@@ -138,9 +143,8 @@ class _QRScannerPageState extends State<QRScannerPage> {
     );
   }
 
-  void _showItemFoundDialog(context, item) {
+  void _showItemFoundDialog(context, item, QRController qrController) {
     int quantity = 1;
-    final qrController = context.read<QRController>();
 
     showDialog(
       context: context,
@@ -259,21 +263,9 @@ class _QRScannerPageState extends State<QRScannerPage> {
                   onPressed: () {
                     context.read<CartController>().addItem(item, quantity);
                     Navigator.pop(context);
-                    Navigator.pop(context); // Go back to catalog
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('${item.name} added to cart'),
-                        backgroundColor: Colors.green[600],
-                        duration: const Duration(seconds: 2),
-                        action: SnackBarAction(
-                          label: 'View Cart',
-                          textColor: Colors.white,
-                          onPressed: () {
-                            // Navigate to cart page if needed
-                          },
-                        ),
-                      ),
-                    );
+
+                    // Show success dialog with options
+                    _showItemAddedDialog(context, item, quantity, qrController);
                   },
                   icon: const Icon(Icons.add_shopping_cart),
                   label: const Text('Add to Cart'),
@@ -285,6 +277,103 @@ class _QRScannerPageState extends State<QRScannerPage> {
               ],
             );
           },
+        );
+      },
+    );
+  }
+
+  void _showItemAddedDialog(
+    BuildContext context,
+    item,
+    int quantity,
+    QRController qrController,
+  ) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.green[600]),
+              const SizedBox(width: 8),
+              const Text('Added to Cart!'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.shopping_cart, size: 64, color: Colors.green[600]),
+              const SizedBox(height: 16),
+              Text(
+                '${item.name}',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Quantity: $quantity',
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Total: \$${(item.price * quantity).toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.green[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+
+                // Navigate to cart page
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CartPage()),
+                );
+              },
+              icon: const Icon(Icons.shopping_cart),
+              label: const Text('View Cart'),
+              style: TextButton.styleFrom(foregroundColor: Colors.blue[600]),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+
+                // Show success message
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${item.name} added to cart'),
+                    backgroundColor: Colors.green[600],
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+
+                // Resume scanning
+                qrController.resumeCamera();
+                qrController.clearScannedItem();
+              },
+              icon: const Icon(Icons.qr_code_scanner),
+              label: const Text('Continue Scanning'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green[600],
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
         );
       },
     );
