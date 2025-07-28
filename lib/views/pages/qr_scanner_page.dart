@@ -45,13 +45,6 @@ class _QRScannerPageState extends State<QRScannerPage> {
           style: TextStyle(color: Colors.white),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          IconButton(
-            onPressed: () => _showHelpDialog(context),
-            icon: const Icon(Icons.help_outline, color: Colors.white),
-            tooltip: 'Help',
-          ),
-        ],
       ),
       body: Consumer<QRController>(
         builder: (context, qrController, child) {
@@ -59,7 +52,9 @@ class _QRScannerPageState extends State<QRScannerPage> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (qrController.scannedItem != null) {
               _showItemFoundDialog(context, qrController.scannedItem!);
-            } else if (qrController.errorMessage != null) {
+            } else if (qrController.errorMessage != null &&
+                !qrController.isProcessing) {
+              // Only show error dialog if not currently processing
               _showItemNotFoundDialog(context, qrController.errorMessage!);
             }
           });
@@ -298,8 +293,12 @@ class _QRScannerPageState extends State<QRScannerPage> {
   void _showItemNotFoundDialog(BuildContext context, String errorMessage) {
     final qrController = context.read<QRController>();
 
+    // Pause camera immediately to prevent further scanning
+    qrController.pauseCamera();
+
     showDialog(
       context: context,
+      barrierDismissible: true, // Allow dismissing by tapping outside
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
@@ -323,48 +322,21 @@ class _QRScannerPageState extends State<QRScannerPage> {
                     : errorMessage,
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue[200]!),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      'Tips for better scanning:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue[700],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '• Ensure good lighting\n'
-                      '• Hold camera steady\n'
-                      '• Keep QR code in frame\n'
-                      '• Clean camera lens',
-                      style: TextStyle(fontSize: 12, color: Colors.blue[600]),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                qrController.resumeCamera();
                 qrController.clearError();
+                qrController.resumeCamera();
               },
               child: const Text('Try Again'),
             ),
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
+                qrController.clearError();
                 Navigator.pop(context); // Go back to catalog
               },
               child: const Text('Back to Catalog'),
@@ -372,85 +344,12 @@ class _QRScannerPageState extends State<QRScannerPage> {
           ],
         );
       },
-    );
-  }
-
-  void _showHelpDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(Icons.help_outline, color: Colors.blue[600]),
-            const SizedBox(width: 8),
-            const Text('How to Scan'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHelpItem(
-              Icons.qr_code_scanner,
-              'Point Camera',
-              'Aim your camera at the QR code on the product',
-            ),
-            const SizedBox(height: 12),
-            _buildHelpItem(
-              Icons.center_focus_strong,
-              'Keep Steady',
-              'Hold your phone steady and keep the QR code in the center',
-            ),
-            const SizedBox(height: 12),
-            _buildHelpItem(
-              Icons.lightbulb_outline,
-              'Good Lighting',
-              'Make sure there\'s enough light to see the QR code clearly',
-            ),
-            const SizedBox(height: 12),
-            _buildHelpItem(
-              Icons.add_shopping_cart,
-              'Add to Cart',
-              'Once scanned, choose quantity and add the item to your cart',
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Got it!'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHelpItem(IconData icon, String title, String description) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: Colors.green[600], size: 20),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-              Text(
-                description,
-                style: TextStyle(color: Colors.grey[600], fontSize: 12),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+    ).then((_) {
+      // Ensure cleanup happens even if dialog is dismissed by tapping outside
+      qrController.clearError();
+      if (Navigator.canPop(context)) {
+        qrController.resumeCamera();
+      }
+    });
   }
 }
